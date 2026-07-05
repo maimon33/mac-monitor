@@ -11,10 +11,10 @@ struct MonitorPopoverView: View {
                 metricRow("RAM", percent: snapshot.memory.percent, detail: "\(bytes(snapshot.memory.usedBytes)) / \(bytes(snapshot.memory.totalBytes))")
             }
             section("IO") {
-                ForEach(snapshot.network.prefix(2)) { item in
+                ForEach(Array(snapshot.networks.prefix(2))) { item in
                     plainRow("NET \(item.name)", "\(bytesPerSecond(item.totalRate))")
                 }
-                if snapshot.network.isEmpty {
+                if snapshot.networks.isEmpty {
                     plainRow("NET", "no active physical device")
                 }
                 ForEach(snapshot.disks.prefix(2)) { disk in
@@ -139,8 +139,8 @@ struct MonitorPopoverView: View {
 
     @ViewBuilder
     private func topNet(_ index: Int) -> some View {
-        if snapshot.network.indices.contains(index) {
-            let item = snapshot.network[index]
+        if snapshot.networks.indices.contains(index) {
+            let item = snapshot.networks[index]
             Text("\(item.name) \(bytesPerSecond(item.totalRate))")
                 .lineLimit(1)
                 .frame(width: 86, alignment: .leading)
