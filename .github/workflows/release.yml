@@ -1,15 +1,22 @@
-name: Swift
+name: Release
 
 on:
   push:
-    branches: ["main", "master"]
-  pull_request:
+    tags:
+      - "v*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to stamp into the app bundle"
+        required: false
+        default: "0.1.0"
 
 jobs:
-  build:
-    name: Build Swift app
+  package:
+    name: Package macOS app
     runs-on: macos-15
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -23,19 +30,20 @@ jobs:
           xcode-select -p
           swift --version
 
-      - name: Build
-        run: swift build -v
-
       - name: Package app
-        if: github.event_name != 'pull_request'
         env:
-          VERSION: 0.1.0
+          VERSION: ${{ github.event.inputs.version || github.ref_name }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: ./scripts/package-macos.sh
 
-      - name: Upload app artifact
-        if: github.event_name != 'pull_request'
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: MacMonitor.app
           path: dist/MacMonitor.app.zip
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/MacMonitor.app.zip

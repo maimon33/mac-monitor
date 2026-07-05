@@ -143,3 +143,12 @@ The monitor is already split into data collection (`mac_monitor.monitor`) and re
 ## Swift prototype
 
 A native Swift menu-bar prototype now lives in `Sources/MacMonitor`. See `SWIFT.md`.
+
+Build a downloadable local app bundle:
+
+```bash
+./scripts/package-macos.sh
+open dist/MacMonitor.app
+```
+
+GitHub Actions also uploads `MacMonitor.app.zip` as a workflow artifact after successful `main` builds. Pushing a tag like `v0.1.0` publishes the zip as a GitHub Release asset.

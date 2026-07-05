@@ -51,6 +51,29 @@ swift build
 swift run MacMonitor
 ```
 
+## Package
+
+Create a local `.app` bundle and zip:
+
+```bash
+./scripts/package-macos.sh
+```
+
+Output:
+
+```text
+dist/MacMonitor.app
+dist/MacMonitor.app.zip
+```
+
+Install locally by unzipping and moving `MacMonitor.app` to `/Applications`, or run it directly:
+
+```bash
+open dist/MacMonitor.app
+```
+
+The app bundle is ad-hoc signed locally with `codesign --sign -`. It is not notarized yet, so macOS may still show Gatekeeper warnings when downloaded from GitHub.
+
 If `xcode-select --install` says the tools are already installed but the error persists, reinstall the CommandLineTools package cleanly:
 
 ```bash

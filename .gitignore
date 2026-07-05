@@ -9,6 +9,7 @@ venv/
 # Swift
 .build/
 .swiftpm/
+dist/
 DerivedData/
 
 # macOS / editors
