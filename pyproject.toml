@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mac-monitor"
+version = "0.1.0"
+description = "A small controllable macOS CLI for network, CPU, RAM, and disk stats."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "mac-monitor contributors" }]
+
+[project.scripts]
+mac-monitor = "mac_monitor.cli:main"
+mm = "mac_monitor.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["mac_monitor*"]

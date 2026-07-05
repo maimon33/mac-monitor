@@ -1,0 +1,24 @@
+name: Swift
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Swift app
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcode-select -p
+          swift --version
+
+      - name: Build
+        run: swift build -v
