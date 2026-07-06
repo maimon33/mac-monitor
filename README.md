@@ -151,4 +151,4 @@ Build a downloadable local app bundle:
 open dist/MacMonitor.app
 ```
 
-GitHub Actions also uploads `MacMonitor.app.zip` as a workflow artifact after successful `main` builds. Pushing a tag like `v0.1.0` publishes the zip as a GitHub Release asset.
+GitHub Actions uploads `MacMonitor.app.zip` and creates a GitHub Release for every release workflow build. Untagged builds are marked prerelease with a generated build tag. Pushing a tag like `v0.1.0` publishes a normal release.

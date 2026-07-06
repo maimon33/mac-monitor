@@ -5,7 +5,8 @@ import SwiftUI
 final class MetricSampler: ObservableObject {
     @Published private(set) var snapshot = Snapshot()
 
-    private var timer: Timer?
+    private var samplingTask: Task<Void, Never>?
+    private var isSampling = false
     private var lastNetworkCounters: [String: (rx: Int64, tx: Int64)] = [:]
     private var lastNetworkDate: Date?
 
@@ -16,34 +17,61 @@ final class MetricSampler: ObservableObject {
     }
 
     func start() {
-        guard timer == nil else { return }
-        sample()
-        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.sample()
+        guard samplingTask == nil else { return }
+        samplingTask = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.sample()
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
     }
 
-    func sample() {
+    func sample() async {
+        guard !isSampling else { return }
+        isSampling = true
         let now = Date()
-        let counters = collectNetworkCounters()
-        let elapsed = lastNetworkDate.map { now.timeIntervalSince($0) } ?? 0
-        let networks = buildNetworkStats(current: counters, previous: lastNetworkCounters, elapsed: elapsed)
-        lastNetworkCounters = counters
-        lastNetworkDate = now
+        let previousCounters = lastNetworkCounters
+        let previousDate = lastNetworkDate
 
-        let processes = collectProcesses(limit: 12)
-        snapshot = Snapshot(
-            date: now,
-            cpu: collectCPU(processes: processes),
-            memory: collectMemory(),
-            disks: collectDisks(limit: 5),
-            networks: networks,
-            topCPU: Array(processes.sorted { $0.cpuPercent > $1.cpuPercent }.prefix(5)),
-            topMemory: Array(processes.sorted { $0.memoryBytes > $1.memoryBytes }.prefix(5))
-        )
+        let result = await Task.detached(priority: .utility) {
+            collectSnapshot(previousNetworkCounters: previousCounters, previousNetworkDate: previousDate, now: now)
+        }.value
+
+        lastNetworkCounters = result.networkCounters
+        lastNetworkDate = now
+        snapshot = result.snapshot
+        isSampling = false
     }
+
+    deinit {
+        samplingTask?.cancel()
+    }
+}
+
+private struct SampleResult {
+    let snapshot: Snapshot
+    let networkCounters: [String: (rx: Int64, tx: Int64)]
+}
+
+private func collectSnapshot(
+    previousNetworkCounters: [String: (rx: Int64, tx: Int64)],
+    previousNetworkDate: Date?,
+    now: Date
+) -> SampleResult {
+    let counters = collectNetworkCounters()
+    let elapsed = previousNetworkDate.map { now.timeIntervalSince($0) } ?? 0
+    let networks = buildNetworkStats(current: counters, previous: previousNetworkCounters, elapsed: elapsed)
+    let processes = collectProcesses(limit: 12)
+    let snapshot = Snapshot(
+        date: now,
+        cpu: collectCPU(processes: processes),
+        memory: collectMemory(),
+        disks: collectDisks(limit: 5),
+        networks: networks,
+        topCPU: Array(processes.sorted { $0.cpuPercent > $1.cpuPercent }.prefix(5)),
+        topMemory: Array(processes.sorted { $0.memoryBytes > $1.memoryBytes }.prefix(5))
+    )
+    return SampleResult(snapshot: snapshot, networkCounters: counters)
 }
 
 private func runCommand(_ executable: String, _ args: [String]) -> String {

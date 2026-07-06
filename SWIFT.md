@@ -74,6 +74,24 @@ open dist/MacMonitor.app
 
 The app bundle is ad-hoc signed locally with `codesign --sign -`. It is not notarized yet, so macOS may still show Gatekeeper warnings when downloaded from GitHub.
 
+## Avoid Gatekeeper Confirmation
+
+To avoid the "cannot verify developer" / confirmation flow for downloaded builds, the app must be signed with an Apple Developer ID certificate and notarized by Apple. Ad-hoc signing is only useful for local packaging.
+
+Add these GitHub Actions secrets to enable signing and notarization:
+
+```text
+MACOS_CERTIFICATE_P12       base64-encoded Developer ID Application .p12
+MACOS_CERTIFICATE_PASSWORD  password for the .p12
+MACOS_KEYCHAIN_PASSWORD     temporary CI keychain password
+MACOS_SIGNING_IDENTITY      Developer ID Application: Your Name (TEAMID)
+APPLE_ID                    Apple ID email
+APPLE_APP_PASSWORD          app-specific password
+APPLE_TEAM_ID               Apple Developer team ID
+```
+
+With those secrets present, the release workflow signs with hardened runtime, submits the zip to Apple notary service, staples the ticket, and re-zips the stapled app.
+
 If `xcode-select --install` says the tools are already installed but the error persists, reinstall the CommandLineTools package cleanly:
 
 ```bash

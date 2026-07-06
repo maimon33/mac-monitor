@@ -7,6 +7,9 @@ BUNDLE_ID="com.maimon33.mac-monitor"
 CONFIGURATION="${CONFIGURATION:-release}"
 APP_VERSION="${VERSION:-0.1.0}"
 APP_VERSION="${APP_VERSION#v}"
+if [[ ! "$APP_VERSION" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
+  APP_VERSION="0.1.0"
+fi
 DIST_DIR="$ROOT_DIR/dist"
 APP_DIR="$DIST_DIR/$APP_NAME.app"
 CONTENTS_DIR="$APP_DIR/Contents"
@@ -47,8 +50,6 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
   <string>${BUILD_NUMBER:-1}</string>
   <key>LSMinimumSystemVersion</key>
   <string>13.0</string>
-  <key>LSUIElement</key>
-  <true/>
   <key>NSHighResolutionCapable</key>
   <true/>
 </dict>
@@ -56,7 +57,12 @@ cat > "$CONTENTS_DIR/Info.plist" <<PLIST
 PLIST
 
 if command -v codesign >/dev/null 2>&1; then
-  codesign --force --sign - "$APP_DIR"
+  CODESIGN_IDENTITY="${SIGNING_IDENTITY:--}"
+  if [[ "$CODESIGN_IDENTITY" == "-" ]]; then
+    codesign --force --sign - "$APP_DIR"
+  else
+    codesign --force --options runtime --timestamp --sign "$CODESIGN_IDENTITY" "$APP_DIR"
+  fi
 fi
 
 ditto -c -k --keepParent "$APP_DIR" "$ZIP_PATH"
